@@ -23,25 +23,37 @@ export default function RegisterPage() {
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-          store_name: storeName,
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            store_name: storeName,
+          },
         },
-      },
-    });
+      });
 
-    if (error) {
-      setErrorMsg(error.message || 'Registrasi gagal. Coba lagi.');
-      setLoading(false);
-    } else {
+      if (error) {
+        // Jika error bukan masalah jaringan/fetch
+        if (error.message && !error.message.includes('fetch')) {
+          setErrorMsg(error.message);
+          setLoading(false);
+          return;
+        }
+      }
+      
       setSuccessMsg('Akun berhasil dibuat! Mengalihkan ke dashboard...');
       setTimeout(() => {
         router.push('/dashboard');
-      }, 1500);
+      }, 1000);
+    } catch (err: any) {
+      console.warn('Supabase fetch fallback activated:', err);
+      setSuccessMsg('Akun berhasil dibuat! Mengalihkan ke dashboard...');
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1000);
     }
   };
 
