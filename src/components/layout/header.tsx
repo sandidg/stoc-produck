@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Calendar, UserCircle, LogOut } from 'lucide-react';
 import { formatDateIndonesian } from '@/lib/utils/date';
 import { createClient } from '@/lib/supabase/client';
@@ -9,12 +10,36 @@ interface HeaderProps {
   userEmail?: string;
 }
 
-export function Header({ storeName = 'Toko Berkah Utama', userEmail = 'user@example.com' }: HeaderProps) {
+export function Header({ storeName: defaultStoreName, userEmail: defaultUserEmail }: HeaderProps) {
   const today = formatDateIndonesian(new Date());
   const supabase = createClient();
 
+  const [displayName, setDisplayName] = useState('Nabila');
+  const [displayStore, setDisplayStore] = useState('Nabila Collection');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('userProfile');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.fullName) setDisplayName(parsed.fullName);
+          else if (parsed.email) setDisplayName(parsed.email);
+          
+          if (parsed.storeName) setDisplayStore(parsed.storeName);
+        } catch (e) {}
+      } else {
+        if (defaultUserEmail && defaultUserEmail !== 'user@example.com') setDisplayName(defaultUserEmail);
+        if (defaultStoreName && defaultStoreName !== 'Toko Berkah Utama') setDisplayStore(defaultStoreName);
+      }
+    }
+  }, [defaultStoreName, defaultUserEmail]);
+
   const handleLogout = async () => {
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('userProfile');
+      }
       await supabase.auth.signOut();
     } catch (err) {
       console.error('Logout error:', err);
@@ -27,7 +52,7 @@ export function Header({ storeName = 'Toko Berkah Utama', userEmail = 'user@exam
     <header className="bg-white border-b border-slate-200 sticky top-0 z-40 px-4 md:px-8 py-3.5 flex items-center justify-between shadow-sm">
       <div className="flex items-center gap-3">
         <div>
-          <h2 className="font-bold text-slate-800 text-base md:text-lg leading-tight">{storeName}</h2>
+          <h2 className="font-bold text-slate-800 text-base md:text-lg leading-tight">{displayStore}</h2>
           <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
             <Calendar className="w-3.5 h-3.5 text-brand-600" />
             <span>{today}</span>
@@ -36,18 +61,18 @@ export function Header({ storeName = 'Toko Berkah Utama', userEmail = 'user@exam
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="hidden sm:flex flex-col text-right">
-          <span className="text-xs font-semibold text-slate-700">{userEmail}</span>
+        <div className="flex flex-col text-right">
+          <span className="text-xs sm:text-sm font-bold text-slate-800 tracking-tight">{displayName}</span>
           <span className="text-[10px] text-brand-600 font-medium bg-brand-50 px-2 py-0.5 rounded-full inline-block">Pemilik Toko</span>
         </div>
         
         <button
           onClick={handleLogout}
           title="Keluar dari Aplikasi"
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs rounded-xl border border-rose-200 transition-all shadow-sm active:scale-95"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs rounded-xl border border-rose-200 transition-all shadow-sm active:scale-95 ml-1"
         >
           <LogOut className="w-4 h-4" />
-          <span>Keluar</span>
+          <span className="hidden sm:inline">Keluar</span>
         </button>
       </div>
     </header>

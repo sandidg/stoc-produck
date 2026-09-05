@@ -32,14 +32,48 @@ export default function LoginPage() {
           return;
         }
       }
+      if (typeof window !== 'undefined') {
+        const existing = localStorage.getItem('userProfile');
+        if (!existing) {
+          const namePrefix = email ? email.split('@')[0] : 'Nabila';
+          const capitalized = namePrefix.charAt(0).toUpperCase() + namePrefix.slice(1);
+          localStorage.setItem('userProfile', JSON.stringify({
+            fullName: capitalized,
+            storeName: `${capitalized} Collection`,
+            email: email || 'nabila@gmail.com',
+          }));
+        }
+      }
       router.push('/dashboard');
     } catch (err: any) {
       console.warn('Supabase login fetch fallback activated:', err);
+      if (typeof window !== 'undefined') {
+        const existing = localStorage.getItem('userProfile');
+        if (!existing) {
+          const namePrefix = email ? email.split('@')[0] : 'Nabila';
+          const capitalized = namePrefix.charAt(0).toUpperCase() + namePrefix.slice(1);
+          localStorage.setItem('userProfile', JSON.stringify({
+            fullName: capitalized,
+            storeName: `${capitalized} Collection`,
+            email: email || 'nabila@gmail.com',
+          }));
+        }
+      }
       router.push('/dashboard');
     }
   };
 
   const handleDemoLogin = () => {
+    if (typeof window !== 'undefined') {
+      const existing = localStorage.getItem('userProfile');
+      if (!existing) {
+        localStorage.setItem('userProfile', JSON.stringify({
+          fullName: 'Nabila',
+          storeName: 'Nabila Collection',
+          email: 'nabila@gmail.com',
+        }));
+      }
+    }
     router.push('/dashboard');
   };
 

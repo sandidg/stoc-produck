@@ -44,12 +44,27 @@ export default function RegisterPage() {
         }
       }
       
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userProfile', JSON.stringify({
+          fullName: fullName || 'Nabila',
+          storeName: storeName || 'Nabila Collection',
+          email: email || 'nabila@gmail.com',
+        }));
+      }
+
       setSuccessMsg('Akun berhasil dibuat! Mengalihkan ke dashboard...');
       setTimeout(() => {
         router.push('/dashboard');
       }, 1000);
     } catch (err: any) {
       console.warn('Supabase fetch fallback activated:', err);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userProfile', JSON.stringify({
+          fullName: fullName || 'Nabila',
+          storeName: storeName || 'Nabila Collection',
+          email: email || 'nabila@gmail.com',
+        }));
+      }
       setSuccessMsg('Akun berhasil dibuat! Mengalihkan ke dashboard...');
       setTimeout(() => {
         router.push('/dashboard');
