@@ -27,10 +27,11 @@ export default function InventarisPage() {
   // New Product Form state
   const [newName, setNewName] = useState('');
   const [newCategory, setNewCategory] = useState('Sembako');
-  const [newBuyPrice, setNewBuyPrice] = useState(0);
-  const [newSellPrice, setNewSellPrice] = useState(0);
-  const [newStock, setNewStock] = useState(0);
-  const [newMinStock, setNewMinStock] = useState(5);
+  const [newBuyPrice, setNewBuyPrice] = useState<number | ''>('');
+  const [newSellPrice, setNewSellPrice] = useState<number | ''>('');
+  const [newStock, setNewStock] = useState<number | ''>('');
+  const [newMinStock, setNewMinStock] = useState<number | ''>(5);
+  const [newUnit, setNewUnit] = useState('pcs');
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -47,17 +48,20 @@ export default function InventarisPage() {
       sku: `BRG-00${products.length + 1}`,
       name: newName,
       category: newCategory,
-      buy_price: Number(newBuyPrice),
-      sell_price: Number(newSellPrice),
-      stock: Number(newStock),
-      min_stock: Number(newMinStock),
-      unit: 'pcs',
+      buy_price: Number(newBuyPrice) || 0,
+      sell_price: Number(newSellPrice) || 0,
+      stock: Number(newStock) || 0,
+      min_stock: Number(newMinStock) || 0,
+      unit: newUnit || 'pcs',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
     setProducts([newProd, ...products]);
     setNewName('');
+    setNewBuyPrice('');
+    setNewSellPrice('');
+    setNewStock('');
     showToast('Barang baru berhasil ditambahkan!');
   };
 
@@ -154,7 +158,7 @@ export default function InventarisPage() {
                     required
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    placeholder="Contoh: Beras Ramos 10kg"
+                    placeholder="Contoh: Kain Katun Premium / Miyang"
                     className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
                   />
                 </div>
@@ -165,15 +169,39 @@ export default function InventarisPage() {
                       type="text"
                       value={newCategory}
                       onChange={(e) => setNewCategory(e.target.value)}
+                      placeholder="Tekstil / Sembako"
                       className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
                     />
                   </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Satuan Barang</label>
+                    <input
+                      type="text"
+                      value={newUnit}
+                      onChange={(e) => setNewUnit(e.target.value)}
+                      placeholder="ball, kardus, sak, kg, pcs"
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 mb-1">Stok Awal</label>
                     <input
                       type="number"
                       value={newStock}
-                      onChange={(e) => setNewStock(Number(e.target.value))}
+                      onChange={(e) => setNewStock(e.target.value === '' ? '' : Number(e.target.value))}
+                      placeholder="0"
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Stok Min. (Alert)</label>
+                    <input
+                      type="number"
+                      value={newMinStock}
+                      onChange={(e) => setNewMinStock(e.target.value === '' ? '' : Number(e.target.value))}
+                      placeholder="5"
                       className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
                     />
                   </div>
@@ -184,7 +212,8 @@ export default function InventarisPage() {
                     <input
                       type="number"
                       value={newBuyPrice}
-                      onChange={(e) => setNewBuyPrice(Number(e.target.value))}
+                      onChange={(e) => setNewBuyPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                      placeholder="0"
                       className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
                     />
                   </div>
@@ -193,19 +222,11 @@ export default function InventarisPage() {
                     <input
                       type="number"
                       value={newSellPrice}
-                      onChange={(e) => setNewSellPrice(Number(e.target.value))}
+                      onChange={(e) => setNewSellPrice(e.target.value === '' ? '' : Number(e.target.value))}
+                      placeholder="0"
                       className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
                     />
                   </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Stok Minimum (Alert)</label>
-                  <input
-                    type="number"
-                    value={newMinStock}
-                    onChange={(e) => setNewMinStock(Number(e.target.value))}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
-                  />
                 </div>
                 <button
                   type="submit"
