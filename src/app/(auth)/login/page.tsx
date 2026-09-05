@@ -136,21 +136,13 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="pt-2 text-center border-t border-slate-100 space-y-3">
+        <div className="pt-2 text-center border-t border-slate-100">
           <p className="text-xs text-slate-600">
             Belum punya akun?{' '}
             <Link href="/register" className="font-bold text-brand-600 hover:underline">
               Daftar Akun Baru
             </Link>
           </p>
-
-          <button
-            type="button"
-            onClick={handleDemoLogin}
-            className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-all"
-          >
-            Akses Mode Demo (Tanpa Login)
-          </button>
         </div>
       </div>
     </div>
