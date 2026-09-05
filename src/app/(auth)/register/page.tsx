@@ -45,10 +45,29 @@ export default function RegisterPage() {
       }
       
       if (typeof window !== 'undefined') {
-        localStorage.setItem('userProfile', JSON.stringify({
+        const cleanEmail = email.toLowerCase().trim();
+        const raw = localStorage.getItem('registeredUsers');
+        const list: any[] = raw ? JSON.parse(raw) : [];
+
+        const existingIdx = list.findIndex((u) => u.email === cleanEmail);
+        const newAccount = {
           fullName: fullName || 'Nabila',
           storeName: storeName || 'Nabila Collection',
-          email: email || 'nabila@gmail.com',
+          email: cleanEmail,
+          password: password,
+        };
+
+        if (existingIdx >= 0) {
+          list[existingIdx] = newAccount;
+        } else {
+          list.push(newAccount);
+        }
+
+        localStorage.setItem('registeredUsers', JSON.stringify(list));
+        localStorage.setItem('userProfile', JSON.stringify({
+          fullName: newAccount.fullName,
+          storeName: newAccount.storeName,
+          email: cleanEmail,
         }));
       }
 
@@ -59,10 +78,29 @@ export default function RegisterPage() {
     } catch (err: any) {
       console.warn('Supabase fetch fallback activated:', err);
       if (typeof window !== 'undefined') {
-        localStorage.setItem('userProfile', JSON.stringify({
+        const cleanEmail = email.toLowerCase().trim();
+        const raw = localStorage.getItem('registeredUsers');
+        const list: any[] = raw ? JSON.parse(raw) : [];
+
+        const existingIdx = list.findIndex((u) => u.email === cleanEmail);
+        const newAccount = {
           fullName: fullName || 'Nabila',
           storeName: storeName || 'Nabila Collection',
-          email: email || 'nabila@gmail.com',
+          email: cleanEmail,
+          password: password,
+        };
+
+        if (existingIdx >= 0) {
+          list[existingIdx] = newAccount;
+        } else {
+          list.push(newAccount);
+        }
+
+        localStorage.setItem('registeredUsers', JSON.stringify(list));
+        localStorage.setItem('userProfile', JSON.stringify({
+          fullName: newAccount.fullName,
+          storeName: newAccount.storeName,
+          email: cleanEmail,
         }));
       }
       setSuccessMsg('Akun berhasil dibuat! Mengalihkan ke dashboard...');

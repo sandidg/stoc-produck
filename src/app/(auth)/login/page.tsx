@@ -19,62 +19,64 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMsg(null);
 
+    const cleanEmail = email.toLowerCase().trim();
+
+    // 1. Coba verifikasi dengan Supabase Auth jika terkonfigurasi
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
         password,
       });
 
-      if (error) {
-        if (error.message && !error.message.includes('fetch')) {
-          setErrorMsg(error.message || 'Login gagal. Periksa kembali email & password Anda.');
-          setLoading(false);
-          return;
-        }
-      }
-      if (typeof window !== 'undefined') {
-        const existing = localStorage.getItem('userProfile');
-        if (!existing) {
-          const namePrefix = email ? email.split('@')[0] : 'Nabila';
-          const capitalized = namePrefix.charAt(0).toUpperCase() + namePrefix.slice(1);
+      if (data?.user) {
+        if (typeof window !== 'undefined') {
           localStorage.setItem('userProfile', JSON.stringify({
-            fullName: capitalized,
-            storeName: `${capitalized} Collection`,
-            email: email || 'nabila@gmail.com',
+            fullName: data.user.user_metadata?.full_name || cleanEmail.split('@')[0],
+            storeName: data.user.user_metadata?.store_name || 'Toko Utama',
+            email: cleanEmail,
           }));
         }
+        router.push('/dashboard');
+        return;
       }
-      router.push('/dashboard');
-    } catch (err: any) {
-      console.warn('Supabase login fetch fallback activated:', err);
-      if (typeof window !== 'undefined') {
-        const existing = localStorage.getItem('userProfile');
-        if (!existing) {
-          const namePrefix = email ? email.split('@')[0] : 'Nabila';
-          const capitalized = namePrefix.charAt(0).toUpperCase() + namePrefix.slice(1);
-          localStorage.setItem('userProfile', JSON.stringify({
-            fullName: capitalized,
-            storeName: `${capitalized} Collection`,
-            email: email || 'nabila@gmail.com',
-          }));
-        }
-      }
-      router.push('/dashboard');
-    }
-  };
 
-  const handleDemoLogin = () => {
-    if (typeof window !== 'undefined') {
-      const existing = localStorage.getItem('userProfile');
-      if (!existing) {
-        localStorage.setItem('userProfile', JSON.stringify({
-          fullName: 'Nabila',
-          storeName: 'Nabila Collection',
-          email: 'nabila@gmail.com',
-        }));
+      if (error && !error.message.includes('fetch')) {
+        setErrorMsg(error.message || 'Login gagal. Periksa kembali email & password Anda.');
+        setLoading(false);
+        return;
       }
+    } catch (err) {
+      console.warn('Supabase auth notice:', err);
     }
-    router.push('/dashboard');
+
+    // 2. Verifikasi Daftar Akun Terdaftar (Lokal / Demo Mode)
+    if (typeof window !== 'undefined') {
+      const raw = localStorage.getItem('registeredUsers');
+      const list: any[] = raw ? JSON.parse(raw) : [];
+
+      const userMatch = list.find((u) => u.email.toLowerCase() === cleanEmail);
+
+      if (!userMatch) {
+        setErrorMsg('Email belum terdaftar! Silakan klik "Daftar Akun Baru" terlebih dahulu.');
+        setLoading(false);
+        return;
+      }
+
+      if (userMatch.password && userMatch.password !== password) {
+        setErrorMsg('Kata sandi (password) salah. Periksa kembali password Anda.');
+        setLoading(false);
+        return;
+      }
+
+      // Akun valid! Simpan profil aktif & masuk dashboard
+      localStorage.setItem('userProfile', JSON.stringify({
+        fullName: userMatch.fullName,
+        storeName: userMatch.storeName,
+        email: userMatch.email,
+      }));
+
+      router.push('/dashboard');
+    }
   };
 
   return (
