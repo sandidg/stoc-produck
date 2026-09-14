@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Store, Mail, Lock, User, ArrowRight, CheckCircle } from 'lucide-react';
+import { Store, Mail, Lock, User, ArrowRight, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function RegisterPage() {
@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [storeName, setStoreName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -23,89 +24,79 @@ export default function RegisterPage() {
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            store_name: storeName,
-          },
-        },
-      });
+    const cleanEmail = email.toLowerCase().trim();
 
-      if (error) {
-        // Jika error bukan masalah jaringan/fetch
-        if (error.message && !error.message.includes('fetch')) {
+    const saveToLocalStorage = () => {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('registeredUsers');
+        const list: any[] = raw ? JSON.parse(raw) : [];
+
+        const existingIdx = list.findIndex((u) => u.email === cleanEmail);
+        const newAccount = {
+          fullName: fullName || 'Nabila',
+          storeName: storeName || 'Nabila Collection',
+          email: cleanEmail,
+          password: password,
+        };
+
+        if (existingIdx >= 0) {
+          list[existingIdx] = newAccount;
+        } else {
+          list.push(newAccount);
+        }
+
+        localStorage.setItem('registeredUsers', JSON.stringify(list));
+        localStorage.setItem('userProfile', JSON.stringify({
+          fullName: newAccount.fullName,
+          storeName: newAccount.storeName,
+          email: cleanEmail,
+        }));
+      }
+    };
+
+    const setSessionCookie = () => {
+      if (typeof document !== 'undefined') {
+        document.cookie = 'demo_session=true; path=/; max-age=86400; SameSite=Lax';
+      }
+    };
+
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const isSupabaseConfigured = supabaseUrl && !supabaseUrl.includes('your-supabase-url');
+
+      if (isSupabaseConfigured) {
+        const { error } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+              store_name: storeName,
+            },
+          },
+        });
+
+        if (error) {
           setErrorMsg(error.message);
           setLoading(false);
           return;
         }
       }
-      
-      if (typeof window !== 'undefined') {
-        const cleanEmail = email.toLowerCase().trim();
-        const raw = localStorage.getItem('registeredUsers');
-        const list: any[] = raw ? JSON.parse(raw) : [];
 
-        const existingIdx = list.findIndex((u) => u.email === cleanEmail);
-        const newAccount = {
-          fullName: fullName || 'Nabila',
-          storeName: storeName || 'Nabila Collection',
-          email: cleanEmail,
-          password: password,
-        };
-
-        if (existingIdx >= 0) {
-          list[existingIdx] = newAccount;
-        } else {
-          list.push(newAccount);
-        }
-
-        localStorage.setItem('registeredUsers', JSON.stringify(list));
-        localStorage.setItem('userProfile', JSON.stringify({
-          fullName: newAccount.fullName,
-          storeName: newAccount.storeName,
-          email: cleanEmail,
-        }));
-      }
-
+      // Simpan ke local storage (Demo Mode / Fallback)
+      saveToLocalStorage();
+      setSessionCookie();
       setSuccessMsg('Akun berhasil dibuat! Mengalihkan ke dashboard...');
       setTimeout(() => {
-        router.push('/dashboard');
+        window.location.href = '/dashboard';
       }, 1000);
     } catch (err: any) {
-      console.warn('Supabase fetch fallback activated:', err);
-      if (typeof window !== 'undefined') {
-        const cleanEmail = email.toLowerCase().trim();
-        const raw = localStorage.getItem('registeredUsers');
-        const list: any[] = raw ? JSON.parse(raw) : [];
-
-        const existingIdx = list.findIndex((u) => u.email === cleanEmail);
-        const newAccount = {
-          fullName: fullName || 'Nabila',
-          storeName: storeName || 'Nabila Collection',
-          email: cleanEmail,
-          password: password,
-        };
-
-        if (existingIdx >= 0) {
-          list[existingIdx] = newAccount;
-        } else {
-          list.push(newAccount);
-        }
-
-        localStorage.setItem('registeredUsers', JSON.stringify(list));
-        localStorage.setItem('userProfile', JSON.stringify({
-          fullName: newAccount.fullName,
-          storeName: newAccount.storeName,
-          email: cleanEmail,
-        }));
-      }
+      console.warn('Supabase auth fallback:', err);
+      saveToLocalStorage();
+      setSessionCookie();
       setSuccessMsg('Akun berhasil dibuat! Mengalihkan ke dashboard...');
       setTimeout(() => {
-        router.push('/dashboard');
+        window.location.href = '/dashboard';
       }, 1000);
     }
   };
@@ -185,15 +176,26 @@ export default function RegisterPage() {
             <div className="relative">
               <Lock className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Minimal 6 karakter"
-                className="w-full pl-10 pr-4 py-2.5 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+                placeholder="Bebas kombinasi huruf & angka (min. 6)"
+                className="w-full pl-10 pr-10 py-2.5 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 focus:outline-none"
+                title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
+            <p className="text-[10px] text-slate-500 mt-1">
+              * Password dapat menggunakan kombinasi huruf (a-z, A-Z), angka, dan simbol.
+            </p>
           </div>
 
           <button

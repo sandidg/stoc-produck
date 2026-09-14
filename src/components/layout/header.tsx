@@ -39,6 +39,7 @@ export function Header({ storeName: defaultStoreName, userEmail: defaultUserEmai
     try {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('userProfile');
+        document.cookie = 'demo_session=; path=/; max-age=0; SameSite=Lax';
       }
       await supabase.auth.signOut();
     } catch (err) {

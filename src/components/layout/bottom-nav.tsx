@@ -18,6 +18,10 @@ export function BottomNav() {
 
   const handleLogout = async () => {
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('userProfile');
+        document.cookie = 'demo_session=; path=/; max-age=0; SameSite=Lax';
+      }
       await supabase.auth.signOut();
     } catch (err) {
       console.error('Logout error:', err);
