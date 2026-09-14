@@ -34,10 +34,14 @@ export async function middleware(request: NextRequest) {
     );
 
     try {
-      const { data } = await supabase.auth.getUser();
-      user = data.user;
+      const userPromise = supabase.auth.getUser();
+      const timeoutPromise = new Promise<any>((resolve) =>
+        setTimeout(() => resolve({ data: { user: null } }), 500)
+      );
+      const res = await Promise.race([userPromise, timeoutPromise]);
+      user = res?.data?.user || null;
     } catch (err) {
-      console.warn('Middleware auth error:', err);
+      user = null;
     }
   }
 

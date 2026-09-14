@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Calendar, Filter, PlusCircle, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { Search, Calendar, Filter, PlusCircle, ArrowUpCircle, ArrowDownCircle, Trash2 } from 'lucide-react';
 import { formatRupiah } from '@/lib/utils/currency';
 import { formatDateIndonesian } from '@/lib/utils/date';
 import { ExportButtons } from '@/components/export/export-buttons';
@@ -17,7 +17,18 @@ const initialTransactions: Transaction[] = [
 ];
 
 export default function BukuKasPage() {
-  const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
+  const [transactions, setTransactions] = useState<Transaction[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('cashbookTransactions');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {}
+      }
+    }
+    return initialTransactions;
+  });
+
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'pemasukan' | 'pengeluaran'>('all');
   const [startDate, setStartDate] = useState('');
@@ -29,6 +40,20 @@ export default function BukuKasPage() {
   const [newCategory, setNewCategory] = useState('Penjualan');
   const [newAmount, setNewAmount] = useState(0);
   const [newDescription, setNewDescription] = useState('');
+
+  const saveTransactions = (newTrans: Transaction[]) => {
+    setTransactions(newTrans);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cashbookTransactions', JSON.stringify(newTrans));
+    }
+  };
+
+  const handleDeleteTransaction = (id: string) => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus transaksi ini dari Buku Kas?')) {
+      const updated = transactions.filter((t) => t.id !== id);
+      saveTransactions(updated);
+    }
+  };
 
   const handleAddTransaction = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +71,7 @@ export default function BukuKasPage() {
       created_at: new Date().toISOString(),
     };
 
-    setTransactions([newTrans, ...transactions]);
+    saveTransactions([newTrans, ...transactions]);
     setShowAddForm(false);
     setNewAmount(0);
     setNewDescription('');
@@ -263,7 +288,7 @@ export default function BukuKasPage() {
                 <th className="p-3.5">Kategori</th>
                 <th className="p-3.5 text-right">Jumlah</th>
                 <th className="p-3.5">Keterangan</th>
-                <th className="p-3.5">Sumber</th>
+                <th className="p-3.5 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -297,7 +322,16 @@ export default function BukuKasPage() {
                       {formatRupiah(t.amount)}
                     </td>
                     <td className="p-3.5 text-slate-600">{t.description || '-'}</td>
-                    <td className="p-3.5 text-slate-400 font-mono text-[11px]">{t.source}</td>
+                    <td className="p-3.5 text-center">
+                      <button
+                        onClick={() => handleDeleteTransaction(t.id)}
+                        title="Hapus Transaksi"
+                        className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 rounded-lg border border-rose-200 transition-all active:scale-95 inline-flex items-center justify-center gap-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span className="text-[10px] font-semibold hidden sm:inline">Hapus</span>
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
