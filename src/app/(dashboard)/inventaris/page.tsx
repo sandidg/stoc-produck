@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { PackagePlus, ArrowUpRight, ArrowDownLeft, Search, AlertCircle, Plus, Check } from 'lucide-react';
+import { PackagePlus, ArrowUpRight, ArrowDownLeft, Search, AlertCircle, Plus, Check, Trash2 } from 'lucide-react';
 import { formatRupiah } from '@/lib/utils/currency';
 import { Product } from '@/types';
 
@@ -13,7 +13,18 @@ const initialProducts: Product[] = [
 ];
 
 export default function InventarisPage() {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<Product[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('inventoryProducts');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {}
+      }
+    }
+    return initialProducts;
+  });
+
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'master' | 'masuk' | 'keluar'>('master');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -38,6 +49,21 @@ export default function InventarisPage() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const saveProducts = (newProds: Product[]) => {
+    setProducts(newProds);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('inventoryProducts', JSON.stringify(newProds));
+    }
+  };
+
+  const handleDeleteProduct = (id: string, name: string) => {
+    if (window.confirm(`Apakah Anda yakin ingin menghapus barang "${name}" dari inventaris?`)) {
+      const updated = products.filter((p) => p.id !== id);
+      saveProducts(updated);
+      showToast(`Barang "${name}" berhasil dihapus!`);
+    }
+  };
+
   const handleAddProduct = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName) return;
@@ -57,7 +83,8 @@ export default function InventarisPage() {
       updated_at: new Date().toISOString(),
     };
 
-    setProducts([newProd, ...products]);
+    const updated = [newProd, ...products];
+    saveProducts(updated);
     setNewName('');
     setNewBuyPrice('');
     setNewSellPrice('');
@@ -82,7 +109,7 @@ export default function InventarisPage() {
       return p;
     });
 
-    setProducts(updatedProducts);
+    saveProducts(updatedProducts);
     const actionText = type === 'in' ? 'Barang Masuk (Restock)' : 'Barang Keluar (Penjualan)';
     showToast(`${actionText} berhasil dicatat! Total: ${formatRupiah(movementQty * movementUnitPrice)}`);
   };
@@ -263,6 +290,7 @@ export default function InventarisPage() {
                       <th className="p-3 text-right">Harga Jual</th>
                       <th className="p-3 text-center">Stok</th>
                       <th className="p-3 text-center">Status</th>
+                      <th className="p-3 text-center">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -288,6 +316,16 @@ export default function InventarisPage() {
                                 Aman
                               </span>
                             )}
+                          </td>
+                          <td className="p-3 text-center">
+                            <button
+                              onClick={() => handleDeleteProduct(p.id, p.name)}
+                              title={`Hapus ${p.name}`}
+                              className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 rounded-lg border border-rose-200 transition-all active:scale-95 inline-flex items-center justify-center gap-1"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span className="text-[10px] font-semibold hidden sm:inline">Hapus</span>
+                            </button>
                           </td>
                         </tr>
                       );

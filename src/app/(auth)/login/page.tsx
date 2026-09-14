@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Store, Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { Store, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
@@ -116,20 +116,6 @@ export default function LoginPage() {
     setLoading(false);
   };
 
-  // 4. Quick Demo Login (1-Click) untuk mempermudah pengujian di Mac / iOS
-  const handleQuickDemo = () => {
-    setLoading(true);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('userProfile', JSON.stringify({
-        fullName: 'Nabila Audytha',
-        storeName: 'Nabila Collection',
-        email: 'nabilaaudytha@gmail.com',
-      }));
-      setSessionCookie();
-      window.location.href = '/dashboard';
-    }
-  };
-
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
@@ -196,19 +182,6 @@ export default function LoginPage() {
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
-
-        {/* Quick Demo Access Button */}
-        <div className="pt-2">
-          <button
-            type="button"
-            onClick={handleQuickDemo}
-            disabled={loading}
-            className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-all flex items-center justify-center gap-2 border border-slate-200"
-          >
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <span>Masuk Demo (1-Click Login)</span>
-          </button>
-        </div>
 
         <div className="pt-2 text-center border-t border-slate-100">
           <p className="text-xs text-slate-600">
