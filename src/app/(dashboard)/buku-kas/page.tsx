@@ -7,6 +7,7 @@ import { formatDateIndonesian } from '@/lib/utils/date';
 import { ExportButtons } from '@/components/export/export-buttons';
 import { mockProducts } from '@/lib/utils/mock-data';
 import { Transaction } from '@/types';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 
 const initialTransactions: Transaction[] = [
   { id: 't1', user_id: 'u1', type: 'pemasukan', category: 'Penjualan Barang', amount: 350000, description: 'Penjualan sembako harian', date: '2026-09-04', source: 'sale_inventory', created_at: '' },
@@ -34,6 +35,9 @@ export default function BukuKasPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+  // Modal konfirmasi hapus state
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+
   // Form modal/card state
   const [showAddForm, setShowAddForm] = useState(false);
   const [newType, setNewType] = useState<'pemasukan' | 'pengeluaran'>('pemasukan');
@@ -48,11 +52,11 @@ export default function BukuKasPage() {
     }
   };
 
-  const handleDeleteTransaction = (id: string) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus transaksi ini dari Buku Kas?')) {
-      const updated = transactions.filter((t) => t.id !== id);
-      saveTransactions(updated);
-    }
+  const confirmDeleteTransaction = () => {
+    if (!deleteTargetId) return;
+    const updated = transactions.filter((t) => t.id !== deleteTargetId);
+    saveTransactions(updated);
+    setDeleteTargetId(null);
   };
 
   const handleAddTransaction = (e: React.FormEvent) => {
@@ -324,7 +328,7 @@ export default function BukuKasPage() {
                     <td className="p-3.5 text-slate-600">{t.description || '-'}</td>
                     <td className="p-3.5 text-center">
                       <button
-                        onClick={() => handleDeleteTransaction(t.id)}
+                        onClick={() => setDeleteTargetId(t.id)}
                         title="Hapus Transaksi"
                         className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 rounded-lg border border-rose-200 transition-all active:scale-95 inline-flex items-center justify-center gap-1"
                       >
@@ -339,6 +343,18 @@ export default function BukuKasPage() {
           </table>
         </div>
       </div>
+
+      {/* Modal Konfirmasi Hapus Profesional */}
+      <ConfirmModal
+        isOpen={!!deleteTargetId}
+        title="Hapus Transaksi Buku Kas?"
+        message="Apakah Anda yakin ingin menghapus data transaksi ini dari Buku Kas secara permanen?"
+        confirmText="Hapus Transaksi"
+        cancelText="Batal"
+        variant="danger"
+        onConfirm={confirmDeleteTransaction}
+        onCancel={() => setDeleteTargetId(null)}
+      />
     </div>
   );
 }

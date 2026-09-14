@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { PackagePlus, ArrowUpRight, ArrowDownLeft, Search, AlertCircle, Plus, Check, Trash2 } from 'lucide-react';
 import { formatRupiah } from '@/lib/utils/currency';
 import { Product } from '@/types';
+import { ConfirmModal } from '@/components/ui/confirm-modal';
 
 const initialProducts: Product[] = [
   { id: '1', user_id: 'u1', sku: 'BRG-001', name: 'Beras Pandan Wangi 5kg', category: 'Sembako', buy_price: 62000, sell_price: 75000, stock: 3, min_stock: 5, unit: 'sak', created_at: '', updated_at: '' },
@@ -28,6 +29,9 @@ export default function InventarisPage() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'master' | 'masuk' | 'keluar'>('master');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Modal konfirmasi hapus state
+  const [deleteProductTarget, setDeleteProductTarget] = useState<{ id: string; name: string } | null>(null);
 
   // Form states untuk Barang Masuk / Keluar
   const [selectedProductId, setSelectedProductId] = useState(initialProducts[0]?.id || '');
@@ -56,12 +60,12 @@ export default function InventarisPage() {
     }
   };
 
-  const handleDeleteProduct = (id: string, name: string) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus barang "${name}" dari inventaris?`)) {
-      const updated = products.filter((p) => p.id !== id);
-      saveProducts(updated);
-      showToast(`Barang "${name}" berhasil dihapus!`);
-    }
+  const confirmDeleteProduct = () => {
+    if (!deleteProductTarget) return;
+    const updated = products.filter((p) => p.id !== deleteProductTarget.id);
+    saveProducts(updated);
+    showToast(`Barang "${deleteProductTarget.name}" berhasil dihapus!`);
+    setDeleteProductTarget(null);
   };
 
   const handleAddProduct = (e: React.FormEvent) => {
@@ -319,7 +323,7 @@ export default function InventarisPage() {
                           </td>
                           <td className="p-3 text-center">
                             <button
-                              onClick={() => handleDeleteProduct(p.id, p.name)}
+                              onClick={() => setDeleteProductTarget({ id: p.id, name: p.name })}
                               title={`Hapus ${p.name}`}
                               className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 rounded-lg border border-rose-200 transition-all active:scale-95 inline-flex items-center justify-center gap-1"
                             >
@@ -432,6 +436,18 @@ export default function InventarisPage() {
           </div>
         </div>
       )}
+
+      {/* Modal Konfirmasi Hapus Produk Profesional */}
+      <ConfirmModal
+        isOpen={!!deleteProductTarget}
+        title="Hapus Barang Inventaris?"
+        message={`Apakah Anda yakin ingin menghapus "${deleteProductTarget?.name || 'barang ini'}" dari master inventaris secara permanen?`}
+        confirmText="Hapus Barang"
+        cancelText="Batal"
+        variant="danger"
+        onConfirm={confirmDeleteProduct}
+        onCancel={() => setDeleteProductTarget(null)}
+      />
     </div>
   );
 }
