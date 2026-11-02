@@ -5,10 +5,4 @@ export const initialProducts: Product[] = [
   { id: '3', user_id: 'u1', sku: 'BRG-003', name: 'Gula Pasir 1kg', category: 'Sembako', buy_price: 14000, sell_price: 17500, stock: 25, min_stock: 10, unit: 'kg', created_at: '', updated_at: '' },
   { id: '4', user_id: 'u1', sku: 'BRG-004', name: 'Telur Ayam 1kg', category: 'Sembako', buy_price: 24000, sell_price: 29000, stock: 4, min_stock: 8, unit: 'kg', created_at: '', updated_at: '' },
 ];
-export const initialTransactions: Transaction[] = [
-  { id: 't1', user_id: 'u1', type: 'pemasukan', category: 'Penjualan Barang', amount: 350000, description: 'Penjualan sembako harian', date: '2026-09-04', source: 'sale_inventory', created_at: '' },
-  { id: 't2', user_id: 'u1', type: 'pengeluaran', category: 'Pembelian Stok Barang', amount: 120000, description: 'Restock Minyak Goreng', date: '2026-09-04', source: 'restock_inventory', created_at: '' },
-  { id: 't3', user_id: 'u1', type: 'pengeluaran', category: 'Operasional', amount: 50000, description: 'Bayar Listrik Toko', date: '2026-09-04', source: 'manual', created_at: '' },
-  { id: 't4', user_id: 'u1', type: 'pemasukan', category: 'Penjualan Barang', amount: 540000, description: 'Penjualan grosir beras 10 sak', date: '2026-09-03', source: 'sale_inventory', created_at: '' },
-  { id: 't5', user_id: 'u1', type: 'pengeluaran', category: 'Sewa Tempat', amount: 500000, description: 'Sewa ruko bulanan', date: '2026-09-01', source: 'manual', created_at: '' },
-];
+export const initialTransactions: Transaction[] = [];

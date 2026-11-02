@@ -2,7 +2,7 @@ import { Transaction, DailySummary, ChartDataPoint } from '@/types';
 export function localDate(date = new Date()): string {
   return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
 }
-export const INITIAL_BALANCE = 2450000;
+export const INITIAL_BALANCE = 0;
 export function dailySummary(transactions: Transaction[], date: string): DailySummary {
   let openingBalance = INITIAL_BALANCE, totalIncome = 0, totalExpense = 0;
   for (const t of transactions) {
