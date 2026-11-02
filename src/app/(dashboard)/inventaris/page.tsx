@@ -1,30 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useStoreData } from '@/lib/use-store-data';
+import { localDate } from '@/lib/utils/store-summary';
 import { PackagePlus, ArrowUpRight, ArrowDownLeft, Search, AlertCircle, Plus, Check, Trash2 } from 'lucide-react';
 import { formatRupiah } from '@/lib/utils/currency';
 import { Product } from '@/types';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 
-const initialProducts: Product[] = [
-  { id: '1', user_id: 'u1', sku: 'BRG-001', name: 'Beras Pandan Wangi 5kg', category: 'Sembako', buy_price: 62000, sell_price: 75000, stock: 3, min_stock: 5, unit: 'sak', created_at: '', updated_at: '' },
-  { id: '2', user_id: 'u1', sku: 'BRG-002', name: 'Minyak Goreng 2L', category: 'Sembako', buy_price: 28000, sell_price: 34000, stock: 2, min_stock: 10, unit: 'pouch', created_at: '', updated_at: '' },
-  { id: '3', user_id: 'u1', sku: 'BRG-003', name: 'Gula Pasir 1kg', category: 'Sembako', buy_price: 14000, sell_price: 17500, stock: 25, min_stock: 10, unit: 'kg', created_at: '', updated_at: '' },
-  { id: '4', user_id: 'u1', sku: 'BRG-004', name: 'Telur Ayam 1kg', category: 'Sembako', buy_price: 24000, sell_price: 29000, stock: 4, min_stock: 8, unit: 'kg', created_at: '', updated_at: '' },
-];
+
 
 export default function InventarisPage() {
-  const [products, setProducts] = useState<Product[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('inventoryProducts');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {}
-      }
-    }
-    return initialProducts;
-  });
+  const { products, transactions, saveProducts, saveTransactions, ready } = useStoreData();
 
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'master' | 'masuk' | 'keluar'>('master');
@@ -34,10 +21,16 @@ export default function InventarisPage() {
   const [deleteProductTarget, setDeleteProductTarget] = useState<{ id: string; name: string } | null>(null);
 
   // Form states untuk Barang Masuk / Keluar
-  const [selectedProductId, setSelectedProductId] = useState(initialProducts[0]?.id || '');
+  const [selectedProductId, setSelectedProductId] = useState('');
   const [movementQty, setMovementQty] = useState(1);
-  const [movementUnitPrice, setMovementUnitPrice] = useState(initialProducts[0]?.buy_price || 0);
+  const [movementUnitPrice, setMovementUnitPrice] = useState(0);
   const [movementNotes, setMovementNotes] = useState('');
+  useEffect(() => {
+    if (!ready) return;
+    const product = products.find((p) => p.id === selectedProductId) || products[0];
+    setSelectedProductId(product?.id || '');
+    setMovementUnitPrice(product ? (activeTab === 'keluar' ? product.sell_price : product.buy_price) : 0);
+  }, [ready, products, selectedProductId, activeTab]);
 
   // New Product Form state
   const [newName, setNewName] = useState('');
@@ -53,12 +46,7 @@ export default function InventarisPage() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const saveProducts = (newProds: Product[]) => {
-    setProducts(newProds);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('inventoryProducts', JSON.stringify(newProds));
-    }
-  };
+
 
   const confirmDeleteProduct = () => {
     if (!deleteProductTarget) return;
@@ -98,7 +86,7 @@ export default function InventarisPage() {
 
   const handleStockMovement = (type: 'in' | 'out') => {
     const prod = products.find((p) => p.id === selectedProductId);
-    if (!prod) return;
+    if (!prod || !ready || !Number.isFinite(movementQty) || movementQty <= 0 || !Number.isFinite(movementUnitPrice) || movementUnitPrice < 0) return;
 
     if (type === 'out' && prod.stock < movementQty) {
       alert(`Stok tidak mencukupi! Sisa stok: ${prod.stock}`);
@@ -113,6 +101,14 @@ export default function InventarisPage() {
       return p;
     });
 
+    saveTransactions([{
+      id: crypto.randomUUID(), user_id: prod.user_id,
+      type: type === 'in' ? 'pengeluaran' : 'pemasukan',
+      category: type === 'in' ? 'Pembelian Stok Barang' : 'Penjualan Barang',
+      amount: movementQty * movementUnitPrice,
+      description: movementNotes || prod.name + ' (' + movementQty + ' ' + prod.unit + ')',
+      date: localDate(), source: type === 'in' ? 'restock_inventory' : 'sale_inventory', created_at: new Date().toISOString(),
+    }, ...transactions]);
     saveProducts(updatedProducts);
     const actionText = type === 'in' ? 'Barang Masuk (Restock)' : 'Barang Keluar (Penjualan)';
     showToast(`${actionText} berhasil dicatat! Total: ${formatRupiah(movementQty * movementUnitPrice)}`);
@@ -124,6 +120,8 @@ export default function InventarisPage() {
       p.category.toLowerCase().includes(search.toLowerCase()) ||
       (p.sku && p.sku.toLowerCase().includes(search.toLowerCase()))
   );
+
+  if (!ready) return <p role="status">Memuat data toko...</p>;
 
   return (
     <div className="space-y-6">

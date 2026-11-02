@@ -1,34 +1,20 @@
 'use client';
 
 import { useState } from 'react';
+import { useStoreData } from '@/lib/use-store-data';
+import { localDate } from '@/lib/utils/store-summary';
 import { Search, Calendar, Filter, PlusCircle, ArrowUpCircle, ArrowDownCircle, Trash2 } from 'lucide-react';
 import { formatRupiah } from '@/lib/utils/currency';
 import { formatDateIndonesian } from '@/lib/utils/date';
 import { ExportButtons } from '@/components/export/export-buttons';
-import { mockProducts } from '@/lib/utils/mock-data';
+
 import { Transaction } from '@/types';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
 
-const initialTransactions: Transaction[] = [
-  { id: 't1', user_id: 'u1', type: 'pemasukan', category: 'Penjualan Barang', amount: 350000, description: 'Penjualan sembako harian', date: '2026-09-04', source: 'sale_inventory', created_at: '' },
-  { id: 't2', user_id: 'u1', type: 'pengeluaran', category: 'Pembelian Stok Barang', amount: 120000, description: 'Restock Minyak Goreng', date: '2026-09-04', source: 'restock_inventory', created_at: '' },
-  { id: 't3', user_id: 'u1', type: 'pengeluaran', category: 'Operasional', amount: 50000, description: 'Bayar Listrik Toko', date: '2026-09-04', source: 'manual', created_at: '' },
-  { id: 't4', user_id: 'u1', type: 'pemasukan', category: 'Penjualan Barang', amount: 540000, description: 'Penjualan grosir beras 10 sak', date: '2026-09-03', source: 'sale_inventory', created_at: '' },
-  { id: 't5', user_id: 'u1', type: 'pengeluaran', category: 'Sewa Tempat', amount: 500000, description: 'Sewa ruko bulanan', date: '2026-09-01', source: 'manual', created_at: '' },
-];
+
 
 export default function BukuKasPage() {
-  const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('cashbookTransactions');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {}
-      }
-    }
-    return initialTransactions;
-  });
+  const { products, transactions, saveProducts, saveTransactions, ready } = useStoreData();
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'pemasukan' | 'pengeluaran'>('all');
@@ -45,12 +31,7 @@ export default function BukuKasPage() {
   const [newAmount, setNewAmount] = useState(0);
   const [newDescription, setNewDescription] = useState('');
 
-  const saveTransactions = (newTrans: Transaction[]) => {
-    setTransactions(newTrans);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cashbookTransactions', JSON.stringify(newTrans));
-    }
-  };
+
 
   const confirmDeleteTransaction = () => {
     if (!deleteTargetId) return;
@@ -70,7 +51,7 @@ export default function BukuKasPage() {
       category: newCategory,
       amount: Number(newAmount),
       description: newDescription,
-      date: new Date().toISOString().slice(0, 10),
+      date: localDate(),
       source: 'manual',
       created_at: new Date().toISOString(),
     };
@@ -100,6 +81,8 @@ export default function BukuKasPage() {
     .filter((t) => t.type === 'pengeluaran')
     .reduce((sum, t) => sum + t.amount, 0);
 
+  if (!ready) return <p role="status">Memuat data toko...</p>;
+
   return (
     <div className="space-y-6">
       {/* Header & Quick Action Buttons */}
@@ -120,7 +103,7 @@ export default function BukuKasPage() {
 
           <ExportButtons
             transactions={filteredTransactions}
-            products={mockProducts}
+            products={products}
             summary={{
               openingBalance: 2450000,
               totalIncome,

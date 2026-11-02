@@ -8,16 +8,18 @@ import { exportFinancialReportToExcel } from '@/lib/utils/excel-exporter';
 import { exportFinancialReportToPDF } from '@/lib/utils/pdf-exporter';
 import { Transaction, Product } from '@/types';
 
-import { mockProducts, mockTransactions } from '@/lib/utils/mock-data';
+import { useStoreData } from '@/lib/use-store-data';
+import { localDate } from '@/lib/utils/store-summary';
 
 export default function LaporanPage() {
+  const { products, transactions, ready } = useStoreData();
   const [periodType, setPeriodType] = useState<'harian' | 'bulanan' | 'tahunan'>('bulanan');
-  const [selectedDate, setSelectedDate] = useState('2026-09-04');
-  const [selectedMonth, setSelectedMonth] = useState('2026-09');
-  const [selectedYear, setSelectedYear] = useState('2026');
+  const [selectedDate, setSelectedDate] = useState(localDate());
+  const [selectedMonth, setSelectedMonth] = useState(localDate().slice(0, 7));
+  const [selectedYear, setSelectedYear] = useState(localDate().slice(0, 4));
 
   // Filter transaksi berdasarkan periode
-  const filteredTransactions = mockTransactions.filter((t) => {
+  const filteredTransactions = transactions.filter((t) => {
     if (periodType === 'harian') {
       return t.date === selectedDate;
     } else if (periodType === 'bulanan') {
@@ -48,7 +50,7 @@ export default function LaporanPage() {
   const handleExportExcel = () => {
     exportFinancialReportToExcel({
       transactions: filteredTransactions,
-      products: mockProducts,
+      products: products,
       summary: {
         openingBalance: 0,
         totalIncome,
@@ -75,6 +77,8 @@ export default function LaporanPage() {
       filename: `Laporan_${periodType.toUpperCase()}_${new Date().toISOString().slice(0, 10)}.pdf`,
     });
   };
+
+  if (!ready) return <p role="status">Memuat data toko...</p>;
 
   return (
     <div className="space-y-6">
