@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useStoreData } from '@/lib/use-store-data';
-import { localDate } from '@/lib/utils/store-summary';
-import { Search, Calendar, Filter, PlusCircle, ArrowUpCircle, ArrowDownCircle, Trash2 } from 'lucide-react';
+import { localDate, dailySummary, INITIAL_BALANCE } from '@/lib/utils/store-summary';
+import { Search, PlusCircle, ArrowUpCircle, ArrowDownCircle, Trash2 } from 'lucide-react';
 import { formatRupiah } from '@/lib/utils/currency';
 import { formatDateIndonesian } from '@/lib/utils/date';
 import { ExportButtons } from '@/components/export/export-buttons';
@@ -30,6 +30,7 @@ export default function BukuKasPage() {
   const [newCategory, setNewCategory] = useState('Penjualan');
   const [newAmount, setNewAmount] = useState(0);
   const [newDescription, setNewDescription] = useState('');
+  const [newDate, setNewDate] = useState(localDate());
 
 
 
@@ -51,7 +52,7 @@ export default function BukuKasPage() {
       category: newCategory,
       amount: Number(newAmount),
       description: newDescription,
-      date: localDate(),
+      date: newDate || localDate(),
       source: 'manual',
       created_at: new Date().toISOString(),
     };
@@ -60,6 +61,7 @@ export default function BukuKasPage() {
     setShowAddForm(false);
     setNewAmount(0);
     setNewDescription('');
+    setNewDate(localDate());
   };
 
   const filteredTransactions = transactions.filter((t) => {
@@ -80,6 +82,10 @@ export default function BukuKasPage() {
   const totalExpense = filteredTransactions
     .filter((t) => t.type === 'pengeluaran')
     .reduce((sum, t) => sum + t.amount, 0);
+
+  // Hitung saldo dinamis dari semua transaksi (bukan hanya filtered)
+  const today = localDate();
+  const liveSummary = dailySummary(transactions, today);
 
   if (!ready) return <p role="status">Memuat data toko...</p>;
 
@@ -105,10 +111,10 @@ export default function BukuKasPage() {
             transactions={filteredTransactions}
             products={products}
             summary={{
-              openingBalance: 2450000,
+              openingBalance: liveSummary.openingBalance,
               totalIncome,
               totalExpense,
-              closingBalance: 2450000 + totalIncome - totalExpense,
+              closingBalance: liveSummary.openingBalance + totalIncome - totalExpense,
             }}
             storeName="Toko Berkah Utama"
           />
@@ -119,7 +125,7 @@ export default function BukuKasPage() {
       {showAddForm && (
         <div className="bg-white p-5 rounded-2xl border border-brand-200 shadow-md">
           <h3 className="font-bold text-slate-800 text-base mb-3">Form Catat Transaksi Manual</h3>
-          <form onSubmit={handleAddTransaction} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <form onSubmit={handleAddTransaction} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">Tipe Transaksi</label>
               <select
@@ -152,6 +158,15 @@ export default function BukuKasPage() {
               />
             </div>
             <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Tanggal</label>
+              <input
+                type="date"
+                value={newDate}
+                onChange={(e) => setNewDate(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+              />
+            </div>
+            <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">Keterangan</label>
               <input
                 type="text"
@@ -161,7 +176,7 @@ export default function BukuKasPage() {
                 className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
               />
             </div>
-            <div className="sm:col-span-2 lg:col-span-4 flex justify-end gap-2 mt-2">
+            <div className="sm:col-span-2 lg:col-span-5 flex justify-end gap-2 mt-2">
               <button
                 type="button"
                 onClick={() => setShowAddForm(false)}

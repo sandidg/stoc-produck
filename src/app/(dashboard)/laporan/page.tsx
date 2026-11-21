@@ -9,7 +9,7 @@ import { exportFinancialReportToPDF } from '@/lib/utils/pdf-exporter';
 import { Transaction, Product } from '@/types';
 
 import { useStoreData } from '@/lib/use-store-data';
-import { localDate } from '@/lib/utils/store-summary';
+import { localDate, INITIAL_BALANCE } from '@/lib/utils/store-summary';
 
 export default function LaporanPage() {
   const { products, transactions, ready } = useStoreData();
@@ -40,6 +40,18 @@ export default function LaporanPage() {
 
   const netProfit = totalIncome - totalExpense;
 
+  // Hitung saldo awal periode secara dinamis:
+  // saldo awal = INITIAL_BALANCE + semua transaksi yang terjadi SEBELUM periode ini
+  const getPeriodStartDate = () => {
+    if (periodType === 'harian') return selectedDate;
+    if (periodType === 'bulanan') return `${selectedMonth}-01`;
+    return `${selectedYear}-01-01`;
+  };
+  const periodStart = getPeriodStartDate();
+  const openingBalance = transactions
+    .filter((t) => t.date < periodStart)
+    .reduce((bal, t) => bal + (t.type === 'pemasukan' ? t.amount : -t.amount), INITIAL_BALANCE);
+
   const getPeriodeString = () => {
     if (periodType === 'harian') return formatDateIndonesian(selectedDate);
     if (periodType === 'bulanan') return `Bulan ${selectedMonth}`;
@@ -52,10 +64,10 @@ export default function LaporanPage() {
       transactions: filteredTransactions,
       products: products,
       summary: {
-        openingBalance: 0,
+        openingBalance,
         totalIncome,
         totalExpense,
-        closingBalance: netProfit,
+        closingBalance: openingBalance + totalIncome - totalExpense,
       },
       storeName: 'Toko Berkah Utama',
       periode: getPeriodeString(),
@@ -68,10 +80,10 @@ export default function LaporanPage() {
       storeName: 'Toko Berkah Utama',
       periode: getPeriodeString(),
       summary: {
-        openingBalance: 0,
+        openingBalance,
         totalIncome,
         totalExpense,
-        closingBalance: netProfit,
+        closingBalance: openingBalance + totalIncome - totalExpense,
       },
       transactions: filteredTransactions,
       filename: `Laporan_${periodType.toUpperCase()}_${new Date().toISOString().slice(0, 10)}.pdf`,
