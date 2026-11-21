@@ -45,13 +45,26 @@ export default function LoginPage() {
         const res = await Promise.race([authPromise, timeoutPromise]);
 
         if (res?.data?.user) {
+          const profileData = {
+            fullName: res.data.user.user_metadata?.full_name || cleanEmail.split('@')[0],
+            storeName: res.data.user.user_metadata?.store_name || 'Toko Utama',
+            email: cleanEmail,
+          };
           if (typeof window !== 'undefined') {
-            localStorage.setItem('userProfile', JSON.stringify({
-              fullName: res.data.user.user_metadata?.full_name || cleanEmail.split('@')[0],
-              storeName: res.data.user.user_metadata?.store_name || 'Toko Utama',
-              email: cleanEmail,
-            }));
+            localStorage.setItem('userProfile', JSON.stringify(profileData));
           }
+
+          // Pastikan terdaftar di profiles Supabase
+          try {
+            await supabase.from('profiles').upsert({
+              id: cleanEmail,
+              email: cleanEmail,
+              full_name: profileData.fullName,
+              store_name: profileData.storeName,
+              updated_at: new Date().toISOString(),
+            });
+          } catch (e) {}
+
           setSessionCookie();
           window.location.href = '/dashboard';
           return;

@@ -13,15 +13,14 @@ interface ExportPDFOptions {
 }
 
 /**
- * Ekspor Ringkasan Keuangan dan Transaksi ke PDF Siap Cetak A4
+ * Buat instance jsPDF Laporan Keuangan
  */
-export function exportFinancialReportToPDF({
+export function createFinancialPDFDoc({
   storeName = 'TOKO BERKAH UTAMA',
   periode = formatDateIndonesian(new Date()),
   summary,
   transactions,
-  filename = 'Laporan_Keuangan.pdf',
-}: ExportPDFOptions) {
+}: ExportPDFOptions): jsPDF {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -152,5 +151,13 @@ export function exportFinancialReportToPDF({
     );
   }
 
-  doc.save(filename);
+  return doc;
+}
+
+/**
+ * Ekspor Ringkasan Keuangan dan Transaksi ke PDF Siap Cetak A4 (Unduh di Browser)
+ */
+export function exportFinancialReportToPDF(options: ExportPDFOptions) {
+  const doc = createFinancialPDFDoc(options);
+  doc.save(options.filename || 'Laporan_Keuangan.pdf');
 }

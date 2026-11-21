@@ -12,17 +12,15 @@ interface ExportExcelParams {
 }
 
 /**
- * Ekspor Laporan Lengkap ke SATU FILE Excel (.xlsx) dengan 2 Sheet (Laporan Keuangan & Stok Barang)
- * Menggunakan ExcelJS untuk menambahkan border outline sel secara tegas pada seluruh tabel.
+ * Buat ExcelJS.Workbook lengkap dengan 2 sheet (Laporan Keuangan & Stok Barang)
  */
-export async function exportFinancialReportToExcel({
+export async function createFinancialWorkbook({
   transactions,
   products = [],
   summary,
   storeName = 'TOKO BERKAH UTAMA',
   periode = formatDateIndonesian(new Date()),
-  filename = 'Laporan_Keuangan_Toko.xlsx',
-}: ExportExcelParams) {
+}: ExportExcelParams): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = storeName;
   workbook.created = new Date();
@@ -434,7 +432,14 @@ export async function exportFinancialReportToExcel({
     ];
   }
 
-  // Unduh File Excel di Browser
+  return workbook;
+}
+
+/**
+ * Unduh File Excel di Browser
+ */
+export async function exportFinancialReportToExcel(params: ExportExcelParams) {
+  const workbook = await createFinancialWorkbook(params);
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -442,7 +447,7 @@ export async function exportFinancialReportToExcel({
   const url = window.URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = filename;
+  anchor.download = params.filename || 'Laporan_Keuangan_Toko.xlsx';
   anchor.click();
   window.URL.revokeObjectURL(url);
 }

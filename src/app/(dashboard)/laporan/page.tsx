@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar as CalendarIcon, TrendingUp, TrendingDown, DollarSign, FileSpreadsheet, FileText, Filter } from 'lucide-react';
+import { Calendar as CalendarIcon, TrendingUp, TrendingDown, DollarSign, FileSpreadsheet, FileText, Filter, Mail, Loader2, CheckCircle2 } from 'lucide-react';
 import { formatRupiah } from '@/lib/utils/currency';
 import { formatDateIndonesian } from '@/lib/utils/date';
 import { exportFinancialReportToExcel } from '@/lib/utils/excel-exporter';
@@ -90,6 +90,28 @@ export default function LaporanPage() {
     });
   };
 
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailAlert, setEmailAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const handleSendEmail = async () => {
+    setSendingEmail(true);
+    setEmailAlert(null);
+    try {
+      const res = await fetch('/api/cron/daily-report', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setEmailAlert({ type: 'success', message: data.message });
+      } else {
+        setEmailAlert({ type: 'error', message: data.error || 'Gagal mengirim email.' });
+      }
+    } catch (err: any) {
+      setEmailAlert({ type: 'error', message: err.message || 'Gagal menghubungi server email.' });
+    } finally {
+      setSendingEmail(false);
+      setTimeout(() => setEmailAlert(null), 6000);
+    }
+  };
+
   if (!ready) return <p role="status">Memuat data toko...</p>;
 
   return (
@@ -170,24 +192,51 @@ export default function LaporanPage() {
           </div>
         </div>
 
-        {/* Tombol Export (Button Only) */}
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+        {/* Tombol Export & Kirim Email */}
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
+          <button
+            onClick={handleSendEmail}
+            disabled={sendingEmail}
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-xl shadow-sm transition-all"
+            title="Kirim Laporan Harian ke Email Terdaftar"
+          >
+            {sendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+            <span>{sendingEmail ? 'Mengirim...' : 'Kirim ke Email'}</span>
+          </button>
           <button
             onClick={handleExportExcel}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-sm transition-all"
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-sm transition-all"
           >
             <FileSpreadsheet className="w-4 h-4" />
-            <span>Export to Excel</span>
+            <span>Excel</span>
           </button>
           <button
             onClick={handleExportPDF}
-            className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-sm transition-all"
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-sm transition-all"
           >
             <FileText className="w-4 h-4" />
-            <span>Export to PDF</span>
+            <span>PDF</span>
           </button>
         </div>
       </div>
+
+      {/* Alert Status Pengiriman Email */}
+      {emailAlert && (
+        <div
+          className={`p-4 rounded-2xl border text-xs sm:text-sm font-semibold flex items-center gap-3 transition-all ${
+            emailAlert.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-rose-50 border-rose-200 text-rose-800'
+          }`}
+        >
+          {emailAlert.type === 'success' ? (
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+          ) : (
+            <Mail className="w-5 h-5 text-rose-600 shrink-0" />
+          )}
+          <span>{emailAlert.message}</span>
+        </div>
+      )}
 
       {/* Financial Summary Cards untuk Periode Terpilih */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

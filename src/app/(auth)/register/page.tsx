@@ -81,6 +81,19 @@ export default function RegisterPage() {
           setLoading(false);
           return;
         }
+
+        // Simpan profil email ke tabel profiles di Supabase untuk daftar kirim email harian
+        try {
+          await supabase.from('profiles').upsert({
+            id: cleanEmail,
+            email: cleanEmail,
+            full_name: fullName || 'Pemilik Toko',
+            store_name: storeName || 'Toko Utama',
+            created_at: new Date().toISOString(),
+          });
+        } catch (e) {
+          console.warn('Gagal simpan ke profiles:', e);
+        }
       }
 
       // Simpan ke local storage (Demo Mode / Fallback)
