@@ -6,6 +6,7 @@ import { formatRupiah } from '@/lib/utils/currency';
 import { formatDateIndonesian } from '@/lib/utils/date';
 import { exportFinancialReportToExcel } from '@/lib/utils/excel-exporter';
 import { exportFinancialReportToPDF } from '@/lib/utils/pdf-exporter';
+import { parseTransactionDetails } from '@/lib/utils/transaction-helper';
 import { Transaction, Product } from '@/types';
 
 import { useStoreData } from '@/lib/use-store-data';
@@ -291,43 +292,56 @@ export default function LaporanPage() {
                 <th className="p-3.5">Tanggal</th>
                 <th className="p-3.5">Tipe Transaksi</th>
                 <th className="p-3.5">Kategori</th>
+                <th className="p-3.5">Detail Barang / Qty</th>
                 <th className="p-3.5 text-right">Jumlah (Rp)</th>
-                <th className="p-3.5">Keterangan</th>
+                <th className="p-3.5">Catatan / Keterangan</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-slate-400">
+                  <td colSpan={6} className="p-8 text-center text-slate-400">
                     Tidak ada data transaksi pada periode ini.
                   </td>
                 </tr>
               ) : (
-                filteredTransactions.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50">
-                    <td className="p-3.5 font-medium text-slate-700">{formatDateIndonesian(t.date)}</td>
-                    <td className="p-3.5">
-                      {t.type === 'pemasukan' ? (
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
-                          PEMASUKAN
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-bold text-[10px]">
-                          PENGELUARAN
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3.5 font-semibold text-slate-800">{t.category}</td>
-                    <td
-                      className={`p-3.5 text-right font-bold ${
-                        t.type === 'pemasukan' ? 'text-emerald-600' : 'text-rose-600'
-                      }`}
-                    >
-                      {formatRupiah(t.amount)}
-                    </td>
-                    <td className="p-3.5 text-slate-600">{t.description || '-'}</td>
-                  </tr>
-                ))
+                filteredTransactions.map((t) => {
+                  const { itemDetail, note } = parseTransactionDetails(t);
+                  return (
+                    <tr key={t.id} className="hover:bg-slate-50">
+                      <td className="p-3.5 font-medium text-slate-700 whitespace-nowrap">{formatDateIndonesian(t.date)}</td>
+                      <td className="p-3.5 whitespace-nowrap">
+                        {t.type === 'pemasukan' ? (
+                          <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                            PEMASUKAN
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-bold text-[10px]">
+                            PENGELUARAN
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3.5 font-semibold text-slate-800">{t.category}</td>
+                      <td className="p-3.5">
+                        {itemDetail !== '-' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200/70 font-bold text-xs">
+                            📦 {itemDetail}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )}
+                      </td>
+                      <td
+                        className={`p-3.5 text-right font-bold whitespace-nowrap ${
+                          t.type === 'pemasukan' ? 'text-emerald-600' : 'text-rose-600'
+                        }`}
+                      >
+                        {formatRupiah(t.amount)}
+                      </td>
+                      <td className="p-3.5 text-slate-600 font-medium">{note}</td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

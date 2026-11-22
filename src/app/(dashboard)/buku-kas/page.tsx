@@ -10,6 +10,7 @@ import { ExportButtons } from '@/components/export/export-buttons';
 
 import { Transaction } from '@/types';
 import { ConfirmModal } from '@/components/ui/confirm-modal';
+import { parseTransactionDetails } from '@/lib/utils/transaction-helper';
 
 
 
@@ -28,6 +29,8 @@ export default function BukuKasPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newType, setNewType] = useState<'pemasukan' | 'pengeluaran'>('pemasukan');
   const [newCategory, setNewCategory] = useState('Penjualan');
+  const [newProductName, setNewProductName] = useState('');
+  const [newQty, setNewQty] = useState(1);
   const [newAmount, setNewAmount] = useState(0);
   const [newDescription, setNewDescription] = useState('');
   const [newDate, setNewDate] = useState(localDate());
@@ -45,13 +48,19 @@ export default function BukuKasPage() {
     e.preventDefault();
     if (newAmount <= 0) return;
 
+    let finalDesc = newDescription.trim();
+    if (newProductName.trim()) {
+      const itemPart = `${newProductName.trim()} (${newQty || 1} pcs)`;
+      finalDesc = finalDesc ? `${itemPart} • ${finalDesc}` : itemPart;
+    }
+
     const newTrans: Transaction = {
       id: `t_${Date.now()}`,
       user_id: 'u1',
       type: newType,
       category: newCategory,
       amount: Number(newAmount),
-      description: newDescription,
+      description: finalDesc,
       date: newDate || localDate(),
       source: 'manual',
       created_at: new Date().toISOString(),
@@ -60,6 +69,8 @@ export default function BukuKasPage() {
     saveTransactions([newTrans, ...transactions]);
     setShowAddForm(false);
     setNewAmount(0);
+    setNewProductName('');
+    setNewQty(1);
     setNewDescription('');
     setNewDate(localDate());
   };
@@ -125,7 +136,7 @@ export default function BukuKasPage() {
       {showAddForm && (
         <div className="bg-white p-5 rounded-2xl border border-brand-200 shadow-md">
           <h3 className="font-bold text-slate-800 text-base mb-3">Form Catat Transaksi Manual</h3>
-          <form onSubmit={handleAddTransaction} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <form onSubmit={handleAddTransaction} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">Tipe Transaksi</label>
               <select
@@ -143,12 +154,39 @@ export default function BukuKasPage() {
                 type="text"
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
-                placeholder="Contoh: Operasional / Sewa"
+                placeholder="Contoh: Penjualan Barang / Operasional"
                 className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Jumlah (Rp)</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Barang (Opsional)</label>
+              <input
+                type="text"
+                list="product-list-suggestions"
+                value={newProductName}
+                onChange={(e) => setNewProductName(e.target.value)}
+                placeholder="Pilih atau ketik barang"
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+              />
+              <datalist id="product-list-suggestions">
+                {products.map((p) => (
+                  <option key={p.id} value={p.name} />
+                ))}
+              </datalist>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Jumlah (Qty)</label>
+              <input
+                type="number"
+                min="1"
+                value={newQty}
+                onChange={(e) => setNewQty(Number(e.target.value))}
+                placeholder="1"
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Nominal Jumlah (Rp)</label>
               <input
                 type="number"
                 value={newAmount}
@@ -166,17 +204,17 @@ export default function BukuKasPage() {
                 className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
               />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Keterangan</label>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Catatan Keterangan</label>
               <input
                 type="text"
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
-                placeholder="Detail catatan"
+                placeholder="Detail catatan (misal: AFFILIATE, Pembeli A, dll)"
                 className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
               />
             </div>
-            <div className="sm:col-span-2 lg:col-span-5 flex justify-end gap-2 mt-2">
+            <div className="sm:col-span-2 lg:col-span-4 flex justify-end gap-2 mt-2">
               <button
                 type="button"
                 onClick={() => setShowAddForm(false)}
@@ -288,54 +326,67 @@ export default function BukuKasPage() {
                 <th className="p-3.5">Tanggal</th>
                 <th className="p-3.5">Tipe</th>
                 <th className="p-3.5">Kategori</th>
+                <th className="p-3.5">Detail Barang / Qty</th>
                 <th className="p-3.5 text-right">Jumlah</th>
-                <th className="p-3.5">Keterangan</th>
+                <th className="p-3.5">Catatan / Keterangan</th>
                 <th className="p-3.5 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-400">
+                  <td colSpan={7} className="p-8 text-center text-slate-400">
                     Tidak ada transaksi yang cocok dengan filter.
                   </td>
                 </tr>
               ) : (
-                filteredTransactions.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50">
-                    <td className="p-3.5 font-medium text-slate-700">{formatDateIndonesian(t.date)}</td>
-                    <td className="p-3.5">
-                      {t.type === 'pemasukan' ? (
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
-                          PEMASUKAN
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-bold text-[10px]">
-                          PENGELUARAN
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3.5 font-semibold text-slate-800">{t.category}</td>
-                    <td
-                      className={`p-3.5 text-right font-extrabold ${
-                        t.type === 'pemasukan' ? 'text-emerald-600' : 'text-rose-600'
-                      }`}
-                    >
-                      {formatRupiah(t.amount)}
-                    </td>
-                    <td className="p-3.5 text-slate-600">{t.description || '-'}</td>
-                    <td className="p-3.5 text-center">
-                      <button
-                        onClick={() => setDeleteTargetId(t.id)}
-                        title="Hapus Transaksi"
-                        className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 rounded-lg border border-rose-200 transition-all active:scale-95 inline-flex items-center justify-center gap-1"
+                filteredTransactions.map((t) => {
+                  const { itemDetail, note } = parseTransactionDetails(t);
+                  return (
+                    <tr key={t.id} className="hover:bg-slate-50">
+                      <td className="p-3.5 font-medium text-slate-700 whitespace-nowrap">{formatDateIndonesian(t.date)}</td>
+                      <td className="p-3.5 whitespace-nowrap">
+                        {t.type === 'pemasukan' ? (
+                          <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                            PEMASUKAN
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-bold text-[10px]">
+                            PENGELUARAN
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3.5 font-semibold text-slate-800">{t.category}</td>
+                      <td className="p-3.5">
+                        {itemDetail !== '-' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200/70 font-bold text-xs">
+                            📦 {itemDetail}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )}
+                      </td>
+                      <td
+                        className={`p-3.5 text-right font-extrabold whitespace-nowrap ${
+                          t.type === 'pemasukan' ? 'text-emerald-600' : 'text-rose-600'
+                        }`}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span className="text-[10px] font-semibold hidden sm:inline">Hapus</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                        {formatRupiah(t.amount)}
+                      </td>
+                      <td className="p-3.5 text-slate-600 font-medium">{note}</td>
+                      <td className="p-3.5 text-center whitespace-nowrap">
+                        <button
+                          onClick={() => setDeleteTargetId(t.id)}
+                          title="Hapus Transaksi"
+                          className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 rounded-lg border border-rose-200 transition-all active:scale-95 inline-flex items-center justify-center gap-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span className="text-[10px] font-semibold hidden sm:inline">Hapus</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

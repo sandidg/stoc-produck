@@ -101,13 +101,20 @@ export default function InventarisPage() {
       return p;
     });
 
+    const itemDetail = `${prod.name} (${movementQty} ${prod.unit})`;
+    const cleanNotes = (movementNotes || '').trim();
+    const finalDescription = cleanNotes ? `${itemDetail} • ${cleanNotes}` : itemDetail;
+
     saveTransactions([{
-      id: crypto.randomUUID(), user_id: prod.user_id,
+      id: crypto.randomUUID(),
+      user_id: prod.user_id,
       type: type === 'in' ? 'pengeluaran' : 'pemasukan',
       category: type === 'in' ? 'Pembelian Stok Barang' : 'Penjualan Barang',
       amount: movementQty * movementUnitPrice,
-      description: movementNotes || prod.name + ' (' + movementQty + ' ' + prod.unit + ')',
-      date: localDate(), source: type === 'in' ? 'restock_inventory' : 'sale_inventory', created_at: new Date().toISOString(),
+      description: finalDescription,
+      date: localDate(),
+      source: type === 'in' ? 'restock_inventory' : 'sale_inventory',
+      created_at: new Date().toISOString(),
     }, ...transactions]);
     saveProducts(updatedProducts);
     const actionText = type === 'in' ? 'Barang Masuk (Restock)' : 'Barang Keluar (Penjualan)';

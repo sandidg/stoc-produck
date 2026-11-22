@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import { Transaction, Product, DailySummary } from '@/types';
 import { formatDateIndonesian } from './date';
+import { parseTransactionDetails } from './transaction-helper';
 
 interface ExportExcelParams {
   transactions: Transaction[];
@@ -212,8 +213,8 @@ export async function createFinancialWorkbook({
 
   // 3. TABEL RINCIAN TRANSAKSI KEUANGAN
   const sectionTitle = products && products.length > 0 ? '3. TABEL RINCIAN TRANSAKSI KEUANGAN' : '2. TABEL RINCIAN TRANSAKSI KEUANGAN';
-  wsFinancial.mergeCells(`A${currentRow}:G${currentRow}`);
-  for (let c = 1; c <= 7; c++) {
+  wsFinancial.mergeCells(`A${currentRow}:H${currentRow}`);
+  for (let c = 1; c <= 8; c++) {
     const cell = wsFinancial.getCell(currentRow, c);
     cell.border = thinBorder;
   }
@@ -222,7 +223,7 @@ export async function createFinancialWorkbook({
   trTitleCell.font = { bold: true };
 
   currentRow++;
-  const headers1 = ['No', 'Tanggal', 'Tipe Transaksi', 'Kategori', 'Jumlah (Rp)', 'Keterangan Catatan', 'Sumber Data'];
+  const headers1 = ['No', 'Tanggal', 'Tipe Transaksi', 'Kategori', 'Detail Barang / Qty', 'Jumlah (Rp)', 'Keterangan Catatan', 'Sumber Data'];
   headers1.forEach((h, idx) => {
     const cell = wsFinancial.getCell(currentRow, idx + 1);
     cell.value = h;
@@ -233,13 +234,15 @@ export async function createFinancialWorkbook({
   // Data Transaksi
   transactions.forEach((t, idx) => {
     const rowNum = currentRow + 1 + idx;
+    const { itemDetail, note } = parseTransactionDetails(t);
     const rowValues = [
       idx + 1,
       formatDateIndonesian(t.date),
       t.type === 'pemasukan' ? 'PEMASUKAN' : 'PENGELUARAN',
       t.category,
+      itemDetail,
       t.amount,
-      t.description || '-',
+      note,
       t.source === 'manual' ? 'Manual' : t.source === 'restock_inventory' ? 'Restock Barang' : 'Penjualan Barang',
     ];
 
@@ -248,7 +251,7 @@ export async function createFinancialWorkbook({
       cell.value = val;
       cell.border = thinBorder;
 
-      if (cIdx === 4 && typeof val === 'number') {
+      if (cIdx === 5 && typeof val === 'number') {
         cell.numFmt = currencyFormat;
       }
     });
@@ -258,10 +261,11 @@ export async function createFinancialWorkbook({
     { width: 8 },   // No
     { width: 22 },  // Tanggal
     { width: 18 },  // Tipe Transaksi
-    { width: 25 },  // Kategori
+    { width: 22 },  // Kategori
+    { width: 30 },  // Detail Barang / Qty
     { width: 22 },  // Jumlah (Rp)
-    { width: 42 },  // Keterangan
-    { width: 22 },  // Sumber Data
+    { width: 32 },  // Keterangan
+    { width: 20 },  // Sumber Data
   ];
 
   // -------------------------------------------------------------

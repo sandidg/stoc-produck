@@ -3,6 +3,7 @@ import autoTable from 'jspdf-autotable';
 import { Transaction, DailySummary } from '@/types';
 import { formatRupiah } from './currency';
 import { formatDateIndonesian } from './date';
+import { parseTransactionDetails } from './transaction-helper';
 
 interface ExportPDFOptions {
   storeName?: string;
@@ -103,29 +104,34 @@ export function createFinancialPDFDoc({
   doc.setTextColor(30, 41, 59);
   doc.text('II. RINCIAN TRANSAKSI KEUANGAN', 14, currentY);
 
-  const tableRows = transactions.map((t, idx) => [
-    (idx + 1).toString(),
-    formatDateIndonesian(t.date),
-    t.type === 'pemasukan' ? 'PEMASUKAN' : 'PENGELUARAN',
-    t.category,
-    formatRupiah(t.amount),
-    t.description || '-',
-  ]);
+  const tableRows = transactions.map((t, idx) => {
+    const { itemDetail, note } = parseTransactionDetails(t);
+    return [
+      (idx + 1).toString(),
+      formatDateIndonesian(t.date),
+      t.type === 'pemasukan' ? 'PEMASUKAN' : 'PENGELUARAN',
+      t.category,
+      itemDetail,
+      formatRupiah(t.amount),
+      note,
+    ];
+  });
 
   autoTable(doc, {
     startY: currentY + 4,
-    head: [['No', 'Tanggal', 'Tipe', 'Kategori', 'Jumlah (Rp)', 'Keterangan']],
+    head: [['No', 'Tanggal', 'Tipe', 'Kategori', 'Detail Barang', 'Jumlah (Rp)', 'Keterangan']],
     body: tableRows,
     theme: 'striped',
     headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold', fontSize: 8.5 },
     styles: { fontSize: 8.5, cellPadding: 2 },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 10 },
-      1: { cellWidth: 28 },
-      2: { fontStyle: 'bold', cellWidth: 28 },
-      3: { cellWidth: 32 },
-      4: { halign: 'right', fontStyle: 'bold', cellWidth: 34 },
-      5: { cellWidth: 50 },
+      0: { halign: 'center', cellWidth: 8 },
+      1: { cellWidth: 24 },
+      2: { fontStyle: 'bold', cellWidth: 24 },
+      3: { cellWidth: 26 },
+      4: { fontStyle: 'bold', cellWidth: 36 },
+      5: { halign: 'right', fontStyle: 'bold', cellWidth: 28 },
+      6: { cellWidth: 36 },
     },
     didParseCell: (data) => {
       if (data.section === 'body' && data.column.index === 2) {
